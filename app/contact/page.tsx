@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, ArrowUpRight, Check, Code2, Globe2, Mail, Moon, Send, Sun } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Check, Code2, Globe2, MessageCircle, Moon, Send, Sun } from 'lucide-react'
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 
@@ -17,6 +17,9 @@ const content = {
     sending: 'Envoi en cours…',
     success: 'Merci, votre message a bien été envoyé !',
     error: 'Une erreur est survenue. Veuillez réessayer.',
+    invalidForm: 'Vérifiez votre nom, votre adresse e-mail et votre message.',
+    emailUnavailable: 'L’envoi d’e-mails n’est pas encore configuré. Réessayez plus tard.',
+    emailFailed: 'Le message n’a pas pu être envoyé. Veuillez réessayer plus tard.',
     placeholderName: 'Votre nom',
     placeholderEmail: 'vous@exemple.com',
     placeholderMessage: 'Parlez-moi de votre projet…',
@@ -44,6 +47,9 @@ const content = {
     sending: 'Sending…',
     success: 'Thank you, your message has been sent!',
     error: 'Something went wrong. Please try again.',
+    invalidForm: 'Check your name, email address and message.',
+    emailUnavailable: 'Email delivery is not configured yet. Please try again later.',
+    emailFailed: 'The message could not be sent. Please try again later.',
     placeholderName: 'Your name',
     placeholderEmail: 'you@example.com',
     placeholderMessage: 'Tell me about your project…',
@@ -63,9 +69,8 @@ const content = {
 
 const networks = [
   { name: 'GitHub', handle: '@mahuena22', href: 'https://github.com/mahuena22', icon: Code2 },
-  { name: 'LinkedIn', handle: 'Léa AHOUANSE', href: 'https://www.linkedin.com/in/lea-ahouanse', icon: Globe2 },
-  { name: 'Instagram', handle: '@lea_ahouanse', href: 'https://instagram.com/lea_ahouanse', icon: Globe2 },
-  { name: 'Facebook', handle: 'Léa AHOUANSE', href: 'https://facebook.com/lea.ahouanse', icon: Mail },
+  { name: 'WhatsApp', handle: 'Me contacter', href: 'https://wa.me/qr/OEHBY4TMXQTPC1', icon: MessageCircle },
+  { name: 'Facebook', handle: 'Léa AHOUANSE', href: 'https://www.facebook.com/profile.php?id=100080120589321', icon: Globe2 },
   { name: 'Portfolio', handle: 'Léa AHOUANSE', href: '/', icon: Globe2 },
 ]
 
@@ -73,6 +78,7 @@ export default function ContactPage() {
   const [lang, setLang] = useState<'fr' | 'en'>('fr')
   const [dark, setDark] = useState(true)
   const [sent, setSent] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [submitError, setSubmitError] = useState('')
   const t = content[lang]
 
   useEffect(() => {
@@ -87,10 +93,42 @@ export default function ContactPage() {
       : 'Léa AHOUANSE — Front-End Developer & Digital Creator'
   }, [lang])
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSent('sending')
-    window.setTimeout(() => setSent('success'), 700)
+    setSubmitError('')
+
+    try {
+      const form = event.currentTarget
+      const formData = new FormData(form)
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          message: formData.get('message'),
+        }),
+      })
+
+      if (!response.ok) {
+        setSubmitError(
+          response.status === 400
+            ? t.invalidForm
+            : response.status === 503
+              ? t.emailUnavailable
+              : t.emailFailed,
+        )
+        setSent('error')
+        return
+      }
+
+      form.reset()
+      setSent('success')
+    } catch {
+      setSubmitError(t.error)
+      setSent('error')
+    }
   }
 
   function toggleLanguage() {
@@ -140,7 +178,7 @@ export default function ContactPage() {
                 {sent === 'sending' ? t.sending : t.submit} <Send aria-hidden="true" size={16} />
               </button>
               {sent === 'success' && <p className="form-status success" role="status"><Check size={16} /> {t.success}</p>}
-              {sent === 'error' && <p className="form-status error" role="alert">{t.error}</p>}
+              {sent === 'error' && <p className="form-status error" role="alert">{submitError || t.error}</p>}
             </form>
           </div>
         </section>

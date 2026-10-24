@@ -1,12 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Ubuntu } from 'next/font/google'
 import './globals.css'
-
-const ubuntu = Ubuntu({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  weight: ['400', '500', '700'],
-})
 
 export const metadata: Metadata = {
   title: 'Léa AHOUANSE — Développeuse front-end et créatrice digitale',
@@ -45,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" className={ubuntu.variable}>
+    <html lang="fr">
       <body className="antialiased">
         {children}
       </body>

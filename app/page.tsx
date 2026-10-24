@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useState } from 'react'
-import { ArrowUpRight, Check, Code2, ExternalLink, Globe2, Mail, Menu, Moon, Send, Sun, X } from 'lucide-react'
+import { ArrowUpRight, Check, Code2, ExternalLink, Globe2, Menu, MessageCircle, Moon, Send, Sun, X } from 'lucide-react'
 
 type Translation = { fr: string; en: string }
 type Project = {
@@ -24,9 +24,8 @@ const projects: Project[] = [
 
 const services: [string, Translation, Translation, string][] = [
   ['01', { fr: 'Développement front-end', en: 'Front-End Development' }, { fr: 'Je transforme des maquettes, idées et besoins en interfaces web modernes, responsives et interactives.', en: 'I turn designs, ideas and requirements into modern, responsive and interactive web interfaces.' }, 'front-end-development'],
-  ['02', { fr: 'Développement web', en: 'Web Development' }, { fr: 'Je conçois et développe des solutions web adaptées aux objectifs et aux utilisateurs d’un projet.', en: 'I design and build web solutions tailored to a project’s goals and users.' }, 'web-development'],
-  ['03', { fr: 'Expérience numérique', en: 'Digital Experience' }, { fr: 'Je porte une attention particulière à la structure, à l’ergonomie et à l’expérience utilisateur.', en: 'I focus on structure, usability and the overall user experience.' }, 'digital-experience'],
-  ['04', { fr: 'Contenu numérique', en: 'Digital Content' }, { fr: 'Je réfléchis à la manière dont un produit numérique est présenté, compris et partagé.', en: 'I shape how a digital product is presented, understood and shared.' }, 'digital-content'],
+  ['02', { fr: 'Expérience numérique', en: 'Digital Experience' }, { fr: 'Je porte une attention particulière à la structure, à l’ergonomie et à l’expérience utilisateur.', en: 'I focus on structure, usability and the overall user experience.' }, 'digital-experience'],
+  ['03', { fr: 'Contenu numérique', en: 'Digital Content' }, { fr: 'Je réfléchis à la manière dont un produit numérique est présenté, compris et partagé.', en: 'I shape how a digital product is presented, understood and shared.' }, 'digital-content'],
 ]
 
 const process: [string, Translation, Translation][] = [
@@ -39,9 +38,8 @@ const process: [string, Translation, Translation][] = [
 
 const networks = [
   { name: 'GitHub', handle: '@mahuena22', href: 'https://github.com/mahuena22', icon: Code2 },
-  { name: 'LinkedIn', handle: 'Léa AHOUANSE', href: 'https://www.linkedin.com/in/lea-ahouanse', icon: Globe2 },
-  { name: 'Instagram', handle: '@lea_ahouanse', href: 'https://instagram.com/lea_ahouanse', icon: Globe2 },
-  { name: 'Facebook', handle: 'Léa AHOUANSE', href: 'https://facebook.com/lea.ahouanse', icon: Mail },
+  { name: 'WhatsApp', handle: 'Me contacter', href: 'https://wa.me/qr/OEHBY4TMXQTPC1', icon: MessageCircle },
+  { name: 'Facebook', handle: 'Léa AHOUANSE', href: 'https://www.facebook.com/profile.php?id=100080120589321', icon: Globe2 },
   { name: 'Portfolio', handle: 'Léa AHOUANSE', href: '/', icon: Globe2 },
 ]
 
@@ -51,7 +49,7 @@ const copy = {
     services: 'Services',
     projects: 'Projets',
     contact: 'Contact',
-    hello: 'bonjour, bénin',
+    hello: '',
     role: 'Développeuse front-end',
     creator: 'Créatrice digitale',
     menuLabel: 'Ouvrir le menu',
@@ -86,6 +84,9 @@ const copy = {
     sending: 'Envoi en cours…',
     success: 'Merci, votre message a bien été envoyé !',
     error: 'Une erreur est survenue. Veuillez réessayer.',
+    invalidForm: 'Vérifiez votre nom, votre adresse e-mail et votre message.',
+    emailUnavailable: 'L’envoi d’e-mails n’est pas encore configuré. Réessayez plus tard.',
+    emailFailed: 'Le message n’a pas pu être envoyé. Veuillez réessayer plus tard.',
     placeholderName: 'Votre nom',
     placeholderEmail: 'vous@exemple.com',
     placeholderMessage: 'Parlez-moi de votre projet…',
@@ -105,7 +106,7 @@ const copy = {
     services: 'Services',
     projects: 'Projects',
     contact: 'Contact',
-    hello: 'hello, benin',
+    hello: '',
     role: 'Front-End Developer',
     creator: 'Digital Creator',
     menuLabel: 'Open menu',
@@ -140,6 +141,9 @@ const copy = {
     sending: 'Sending…',
     success: 'Thank you, your message has been sent!',
     error: 'Something went wrong. Please try again.',
+    invalidForm: 'Check your name, email address and message.',
+    emailUnavailable: 'Email delivery is not configured yet. Please try again later.',
+    emailFailed: 'The message could not be sent. Please try again later.',
     placeholderName: 'Your name',
     placeholderEmail: 'you@example.com',
     placeholderMessage: 'Tell me about your project…',
@@ -161,6 +165,7 @@ export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [lang, setLang] = useState<'fr' | 'en'>('fr')
   const [sent, setSent] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [submitError, setSubmitError] = useState('')
   const t = copy[lang]
 
   useEffect(() => {
@@ -175,10 +180,42 @@ export default function Page() {
       : 'Léa AHOUANSE — Front-End Developer & Digital Creator'
   }, [lang])
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSent('sending')
-    window.setTimeout(() => setSent('success'), 700)
+    setSubmitError('')
+
+    try {
+      const form = event.currentTarget
+      const formData = new FormData(form)
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          message: formData.get('message'),
+        }),
+      })
+
+      if (!response.ok) {
+        setSubmitError(
+          response.status === 400
+            ? t.invalidForm
+            : response.status === 503
+              ? t.emailUnavailable
+              : t.emailFailed,
+        )
+        setSent('error')
+        return
+      }
+
+      form.reset()
+      setSent('success')
+    } catch {
+      setSubmitError(t.error)
+      setSent('error')
+    }
   }
 
   function toggleLanguage() {
@@ -213,7 +250,7 @@ export default function Page() {
           className="hero section-grid"
           style={{ backgroundImage: "url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-10-04%20at%2010.36.11-7yJwYkZizdq7N66BmlA2S6COxzdISm.jpeg')" }}
         >
-          <div className="eyebrow">&gt; {t.hello}</div>
+          {t.hello ? <div className="eyebrow">&gt; {t.hello}</div> : null}
           <div>
             <p className="kicker">{t.role} <span>·</span> {t.creator}</p>
             <h1>Léa<br /><em>AHOUANSE</em></h1>
@@ -423,7 +460,7 @@ export default function Page() {
                 )}
                 {sent === 'error' && (
                   <p className="form-status error" role="alert">
-                    {t.error}
+                    {submitError || t.error}
                   </p>
                 )}
               </form>
